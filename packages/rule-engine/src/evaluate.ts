@@ -15,12 +15,15 @@ import type {
  * @param input - Structured patient profile (no real patient identifiers)
  * @param ruleSet - Rule set loaded from confirmed medical content
  * @param contentVersion - Version of the medical content used
+ * @param now - Evaluation timestamp (defaults to current time; inject a fixed value for deterministic behaviour)
  * @returns A ranked shortlist of biologic considerations with full explainability
  */
 export function evaluatePatientProfile(
   input: PatientProfileInput,
   ruleSet: RuleSet,
   contentVersion: MedicalContentVersion,
+  /** ISO 8601 evaluation timestamp. Defaults to the current time. Inject for deterministic testing. */
+  now: Date = new Date(),
 ): RecommendationResult {
   const scoreMap = new Map<
     string,
@@ -72,7 +75,7 @@ export function evaluatePatientProfile(
     encounterRef: input.encounterRef,
     shortlist,
     contentVersion,
-    evaluatedAt: new Date().toISOString(),
+    evaluatedAt: now.toISOString(),
     rulesEvaluated,
   };
 }
