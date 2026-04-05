@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String    @id @default(uuid())
+  auth0Sub           String    @unique
+  email              String    @unique
+  role               String
+  organisationId     String
+  disclaimerAccepted Boolean   @default(false)
+  disclaimerAcceptedAt DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  encounters   Encounter[]
+  auditEvents  AuditEvent[]
+
+  @@map("users")
+}
+
+model Organisation {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  patients PatientCase[]
+
+  @@map("organisations")
+}
+
+model PatientCase {
+  id             String   @id @default(uuid())
+  /// Pseudonymised reference — no real patient names or identifiers
+  pseudonymRef   String   @unique
+  organisationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  encounters   Encounter[]
+
+  @@map("patient_cases")
+}
+
+model Encounter {
+  id              String   @id @default(uuid())
+  patientCaseId   String
+  physicianId     String
+  diseaseSeverity String
+  lundMackayScore Int?
+  snot22Score     Int?
+  clinicalNotes   String?
+  status          String   @default("draft")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  patientCase           PatientCase              @relation(fields: [patientCaseId], references: [id])
+  physician             User                     @relation(fields: [physicianId], references: [id])
+  biomarkerProfile      BiomarkerProfile?
+  comorbidityProfile    ComorbidityProfile?
+  priorTreatmentHistory PriorTreatmentHistory?
+  recommendationResults RecommendationResult[]
+
+  @@map("encounters")
+}
+
+model BiomarkerProfile {
+  id                   String   @id @default(uuid())
+  encounterId          String   @unique
+  bloodEosinophilCount Int?
+  totalIgE             Float?
+  tarc                 Float?
+  periostin            Float?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  encounter Encounter @relation(fields: [encounterId], references: [id])
+
+  @@map("biomarker_profiles")
+}
+
+model ComorbidityProfile {
+  id                                  String   @id @default(uuid())
+  encounterId                         String   @unique
+  hasAsthma                           Boolean  @default(false)
+  hasNSAIDExacerbatedRespiratoryDisease Boolean @default(false)
+  hasAllergicRhinitis                 Boolean  @default(false)
+  hasAtopicDermatitis                 Boolean  @default(false)
+  hasChronicUrticaria                 Boolean  @default(false)
+  hasFoodAllergy                      Boolean  @default(false)
+  hasEosinophilicEsophagitis          Boolean  @default(false)
+  createdAt                           DateTime @default(now())
+  updatedAt                           DateTime @updatedAt
+
+  encounter Encounter @relation(fields: [encounterId], references: [id])
+
+  @@map("comorbidity_profiles")
+}
+
+model PriorTreatmentHistory {
+  id                          String   @id @default(uuid())
+  encounterId                 String   @unique
+  hadPriorSurgery             Boolean  @default(false)
+  numberOfPriorSurgeries      Int?
+  hadSystemicCorticosteroids  Boolean  @default(false)
+  hadTopicalCorticosteroids   Boolean  @default(false)
+  currentBiologic             String?
+  priorBiologics              String[]
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  encounter Encounter @relation(fields: [encounterId], references: [id])
+
+  @@map("prior_treatment_histories")
+}
+
+model RecommendationResult {
+  id               String   @id @default(uuid())
+  encounterId      String
+  shortlistJson    Json
+  contentVersion   String
+  contentChecksum  String
+  rulesEvaluated   Int
+  evaluatedAt      DateTime
+  createdAt        DateTime @default(now())
+
+  encounter Encounter @relation(fields: [encounterId], references: [id])
+
+  @@map("recommendation_results")
+}
+
+model AuditEvent {
+  id             String   @id @default(uuid())
+  eventType      String
+  actorId        String
+  organisationId String?
+  resourceType   String?
+  resourceId     String?
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [auth0Sub])
+
+  @@map("audit_events")
+}
