@@ -14,9 +14,9 @@ import { logger } from './logger';
 export async function writeAuditEvent(event: AuditEventInput): Promise<void> {
   try {
     // Dynamic import to avoid issues during build/test
-    const { prisma } = await import('@biologica/db');
-    
-    await (prisma as any).auditEvent.create({
+    const { prisma } = await import('@biologica/db') as { prisma: import('@prisma/client').PrismaClient };
+
+    await prisma.auditEvent.create({
       data: {
         eventType: event.eventType,
         actorId: event.actorId,

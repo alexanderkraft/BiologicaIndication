@@ -5,7 +5,7 @@ import { z } from 'zod';
  * Validated at startup — the app will throw if any are missing or invalid.
  */
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']),
   // Auth0
   AUTH0_SECRET: z.string().min(32),
   AUTH0_BASE_URL: z.string().url(),
