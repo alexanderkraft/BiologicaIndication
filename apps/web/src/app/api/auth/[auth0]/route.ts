@@ -1,5 +1,6 @@
 import { handleAuth, handleLogin, handleCallback, handleLogout } from '@auth0/nextjs-auth0';
 import { writeAuditEvent } from '@/lib/audit';
+import type { Session } from '@auth0/nextjs-auth0';
 import type { NextRequest } from 'next/server';
 
 /**
@@ -15,12 +16,12 @@ export const GET = handleAuth({
     },
   }),
   callback: handleCallback({
-    async afterCallback(_req: NextRequest, session: { user: { sub: string; email: string } }) {
+    async afterCallback(_req: NextRequest, session: Session) {
       // Write login audit event
       await writeAuditEvent({
         eventType: 'USER_LOGIN',
-        actorId: session.user.sub,
-        metadata: { email: session.user.email },
+        actorId: session.user.sub as string,
+        metadata: { email: session.user.email as string },
       });
       return session;
     },
